@@ -18,3 +18,11 @@ source bin/activate
 
 5. [skip for now] Deactivate venv
 ~ deactivate
+
+
+Git Shenanigans:
+- Have github.com (free) account
+- Create PAT from git -> settings -> Developer settings (make sure you give full repo access)
+- username : apoorva87
+- Password : use PAT
+This is needed for push
