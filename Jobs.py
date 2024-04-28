@@ -50,6 +50,7 @@ class Jobs(object):
 
     def save(self, name='default_joblist.json', exclude_list=[], do=False):
         if do:
+            name = name[:-5] + '_'+str(d.date.today()) + '.json'
             filtered_data = [{k: v for k, v in job.get_dict().items() if k not in exclude_list} for job in self.job_list ]
             with open(name, "w") as f: 
                 #print (json.dumps(filtered_data, indent=2), file=f)
