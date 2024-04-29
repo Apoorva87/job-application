@@ -2,6 +2,7 @@
 import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+print(webdriver.__path__)
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
@@ -9,7 +10,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 
-
+import html
+import UserInfo as u
 
 ##driver = webdriver.Chrome('/path/to/chromedriver')  # Optional argument, if not specified will search path.
 #driver = webdriver.Chrome()  # Optional argument, if not specified will search path.
@@ -20,7 +22,6 @@ from selenium.webdriver.common.action_chains import ActionChains
 #search_box.submit()
 #time.sleep(5) # Let the user actually see something!
 #driver.quit()
-#
 
 chromedriver_path='./chromedriver-mac-arm64/chromedriver'
 chrome_options = Options()
@@ -52,18 +53,134 @@ wait = WebDriverWait(driver, 120)  # Wait for up to 10 seconds
 ##################
 # Fill in the email field
 email_field = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "[data-automation-id='email']")))
-email_field.send_keys("yatin.karnik@gmail.com")
+email_field.send_keys(u.email)
 # Fill in the password field
 password_field = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "[data-automation-id='password']")))
-password_field.send_keys("JobHunt2024*")
+password_field.send_keys(u.password)
 # Handle overlays or click interceptors
-overlay = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "[data-automation-id='click_filter']")))
+time.sleep(2)
+overlay = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-automation-id='click_filter']")))
 overlay.click()
 
-##################
-# My information
-##################
-next_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "[data-automation-id='bottom-navigation-next-button']")))
+#####################
+# Helper functions
+#####################
+
+def workday_save_and_next(wait, frm="prev", to="next"):
+    print (f"Clicking save and next. Going from -> {frm} to {to}")
+    next_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-automation-id='bottom-navigation-next-button']")))
+    time.sleep(2)
+    if next_button:
+        next_button.click()
+    else:
+        print ("Next button not present..")
+        import pdb; pdb.set_trace()
+
+def workday_wait_till_pageload(wait):
+    time.sleep(5)
+    try:
+        next_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "[data-automation-id='bottom-navigation-next-button']")))
+    except:
+        print ("This page is not getting loaded")
+        import pdb; pdb.set_trace()
+
+
+#############################################
+# Helper functions - CSS elements fill types
+##############################################
+def css_dropdown_text_select(q_str, text=""):
+    #import pdb; pdb.set_trace()
+    try:
+        search_box = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, f"{q_str}")))
+    except:
+        print (f"Cannot find this search box - {q_str}")
+        import pdb; pdb.set_trace()
+    search_box.send_keys(text)
+    search_box.click()
+    search_box.click()
+
+
+def css_dropdown_select(q_str, response):
+    #import pdb; pdb.set_trace()
+    # (By.XPATH, "//*[contains(@aria-label, 'search')]"
+    print (q_str)
+    time.sleep(2)
+    try:
+        q = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, f"{q_str}")))
+        q.click()
+    except:
+        print (f"Cannot find dropdown select - {q_str}")
+        import pdb; pdb.set_trace()
+    try:
+        driver.execute_script("arguments[0].scrollIntoView(true);", q) 
+        wait.until(EC.element_to_be_clickable((By.XPATH, f"//div[text()='{response}']"))).click()
+    except:
+        print (f"Cannot select from dropdown list - {response}")
+        import pdb; pdb.set_trace()
+
+
+def css_add_text_info(under_div, field, key):
+    key=key.replace("\r",' ')
+    key=key.replace("\t",'  ')
+    key = html.escape(key)
+    for one in key.split("\n"):
+        try:
+            q = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, f"div[data-automation-id='{under_div}'] {field}")))
+        except:
+            import pdb; pdb.set_trace()
+        if q.text:
+            print (f"******Already text - {q.text}")
+            return
+        q.send_keys(one)
+        ActionChains(driver).key_down(Keys.SHIFT).key_down(Keys.ENTER).key_up(Keys.SHIFT).key_up(Keys.ENTER).perform()
+        time.sleep(1)
+        print(one)
+
+def css_click_radio_box(q_str):
+    time.sleep(4)
+    try:
+        cb = driver.find_element(By.CSS_SELECTOR, f"{q_str}")
+    except:
+        print ("Cannot find clickable element for radio box")
+        import pdb; pdb.set_trace()
+
+    try:
+        #cb.click()
+        driver.execute_script("arguments[0].scrollIntoView(true);", cb)
+        driver.execute_script("arguments[0].click();", cb)
+    except Exception as e:
+        print (f"Cannot click on {q_str} : {e}")
+        # Retry the click with ActionChains to simulate complex interaction
+        action = ActionChains(driver)
+        action.move_to_element(cb).click().perform()  # Simulate precise clicking
+        import pdb; pdb.set_trace()
+        #driver.execute_script("arguments[0].click();", cb)
+
+
+
+def css_click_button(q_str):
+    time.sleep(4)
+    try:
+        cb = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, f"{q_str}")))
+    except:
+        print(f"Cannot find button {q_str}")
+        import pdb; pdb.set_trace()
+
+    try:
+        #cb.click()
+        driver.execute_script("arguments[0].scrollIntoView(true);", cb)
+        driver.execute_script("arguments[0].click();", cb)
+    except:
+        print(f"Cannot press button {q_str}")
+        action = ActionChains(driver)
+        action.move_to_element(cb).click().perform()  # Simulate precise clicking
+        import pdb; pdb.set_trace()
+
+        #add_work = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[aria-label='Add Work Experience']")))
+#####################################################
+#          My information
+#####################################################
+workday_wait_till_pageload(wait)
 
 print("Working on My Information...")
 search_box = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "[data-uxi-widget-type='selectinput']")))
@@ -73,267 +190,226 @@ if search_box:
 else:
     print ("Cannot find referral box")
 
-print ("Next screen..moving to My experience")
-next_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-automation-id='bottom-navigation-next-button']")))
-if next_button:
-    next_button.click()
-else:
-    print ("Next button not present..")
 
+workday_save_and_next(wait, frm="[My information]", to="[My experience]")
+########################################
+#           My experience
+########################################
+workday_wait_till_pageload(wait)
 
-##################
-# My experience
-##################
-next_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-automation-id='bottom-navigation-next-button']")))
-print ("Next screen..moving to My experience....")
-
+skip_edu = False
 def drive_all_experience(wait):
-    add_work = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[aria-label='Add Work Experience']")))
-    add_work.click()
-
-    def add_field_info(under_div, field, key):
-        key=key.replace("\r",' ')
-        key=key.replace("\t",'  ')
-        import html
-        key = html.escape(key)
-        for one in key.split("\n"):
-            q = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, f"div[data-automation-id='{under_div}'] {field}")))
-            q.send_keys(one)
-            ActionChains(driver).key_down(Keys.SHIFT).key_down(Keys.ENTER).key_up(Keys.SHIFT).key_up(Keys.ENTER).perform()
-            print(one)
-
-    add_field_info('workExperience-1', "input[data-automation-id='jobTitle']", "Business Operations & Strategy Consultant")
-    add_field_info('workExperience-1', "input[data-automation-id='company']", "Confer Inc")
-    add_field_info('workExperience-1', "input[data-automation-id='location']", "Dallas, TX")
-
-    time.sleep(4)
+    print ("Drive experience")
     try:
-        cb = driver.find_element(By.CSS_SELECTOR, "div[data-automation-id='workExperience-1'] input[data-automation-id='currentlyWorkHere']")
-        if cb:
-            cb.click()
+        b = driver.find_element(By.CSS_SELECTOR, "div[data-automation-id='workExperienceSection'] button[aria-label='Add Work Experience']")
     except:
-        print ("Cannot click current job")
-        pass
+        print ("Cannot find Add Work Exp button. skipping edu")
+        skip_edu=True
 
-    add_field_info('workExperience-1', "div[data-automation-id='formField-startDate'] input[data-automation-id='dateSectionMonth-input']", "11/2021")
-    job_1_str="""- Developed and launched a user-centric mobile application using advanced AI algorithms to enable efficient loan comparisons across digital platforms, significantly enhancing user experience and decision-making efficiency. (https://confer.today)
-    - Engineered a cutting-edge digital mortgage platform that expanded borrower opportunities to reduce closing costs by 88%, showcasing deep expertise in e-commerce solutions. ●	Guided a cross-platform app launch within 90 days through meticulous agile project management and utilization of AWS, Google Cloud, enhancing development efficiency and product quality by 30%.
-    - Spearheaded cross-functional teams under agile frameworks to enhance market responsiveness and tech adaptability, achieving a 25% faster time-to-market and increasing product adoption by 15% through effective leadership.
-    - Led the strategic pivot of Confer Inc. to a B2B model, overseeing the launch of innovative financial software solutions for banks, which propelled a 25% increase in revenue and solidified market presence."""
+    if skip_edu:
+        print ("**Cannot find Add Work Exp button. skipping edu")
+        return skip_edu
 
-    add_field_info('workExperience-1', "textarea[data-automation-id='description']", job_1_str)
-    print ("Job 1 done.............")
+    css_click_button(q_str="div[data-automation-id='workExperienceSection'] button[aria-label='Add Work Experience']")
 
-    time.sleep(10)
-    try:
-        add_work = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div[data-automation-id='workExperienceSection'] button[data-automation-id='Add Another']")))
-        add_work.click()
-    except:
-        print ("Cannot add another job")
-        import pdb; pdb.set_trace()
-        pass
-
-    add_field_info('workExperience-2', "input[data-automation-id='jobTitle']", "Senior Vice President, Head of National Operations & Head of Fee Strategy & Governance")
-    add_field_info('workExperience-2', "input[data-automation-id='company']", "Wells Fargo")
-    add_field_info('workExperience-2', "input[data-automation-id='location']", "Dallas, TX")
-    add_field_info('workExperience-2', "div[data-automation-id='formField-startDate'] input[data-automation-id='dateSectionMonth-input']", "04/2014")
-    add_field_info('workExperience-2', "div[data-automation-id='formField-endDate'] input[data-automation-id='dateSectionMonth-input']", "11/2021")
-    job_2_str="""
-    - Revolutionized Home Lending Fee Strategy, boosting regulatory compliance and operational efficiency which slashed error rates dramatically from 7% to less than 1%, by implementing agile methodologies and cross-functional team management.
-    - Spearheaded the agile-driven launch of the 'Fee Service' engine, integrating over 1200 settlement agents which enhanced transaction efficiency and cut closing costs by 15%, showcasing strong project management and digital technology application.
-    - Directed over 25 global remediation projects in collaboration with marketing, finance, legal, and operations teams, enhancing compliance with CFPB/RESPA/TILA standards under stringent agile practices. This cross-functional effort demonstrated adeptness in large-scale project management and regulatory adherence, ensuring cohesive strategy and execution across departments.
-    - Implemented robust project management frameworks that improved product innovation cycles by 30% and operational agility by 25%, facilitating effective cross-functional collaborations and aligning with corporate strategic goals.
-    - Developed and deployed innovative digital mortgage platforms that enhanced e-commerce transaction capabilities, boosting user engagement by 46% and financial throughput by 35%.
-    - Led the agile transformation in operational practices, enhancing the speed and efficiency of regulatory project deliveries by 22%, and fostering an environment of continuous improvement and innovation. This strategic shift significantly streamlined compliance with federal regulations, contributing to a 18% reduction in compliance issues.
-    - Boosted VOI, VOE, and VOD process accuracy and efficiency across international teams, decreasing turnaround by 1 day and led Vendor Support Teams across five locations to a 15% gain in Retail Fulfillment productivity with strategic tech initiatives.
-    - Championed cross-functional initiatives, harmonizing tech developments with business and regulatory demands, which streamlined compliance, reduced audit findings by 20%, and achieved annual cost savings of $750k.
-    """
-    add_field_info('workExperience-2', "textarea[data-automation-id='description']", job_2_str)
-
-
-    time.sleep(10)
-    try:
-        add_work = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div[data-automation-id='workExperienceSection'] button[data-automation-id='Add Another']")))
-        add_work.click()
-    except:
-        print ("Cannot add another job")
-        import pdb; pdb.set_trace()
-        pass
-
-
-    add_field_info('workExperience-3', "input[data-automation-id='jobTitle']", "Vice President, Sales and Services System Office")
-    add_field_info('workExperience-3', "input[data-automation-id='company']", "Wells Fargo")
-    add_field_info('workExperience-3', "input[data-automation-id='location']", "Des Moines, IA")
-    add_field_info('workExperience-3', "div[data-automation-id='formField-endDate'] input[data-automation-id='dateSectionMonth-input']", "04/2014")
-    add_field_info('workExperience-3', "div[data-automation-id='formField-startDate'] input[data-automation-id='dateSectionMonth-input']", "05/2007")
-    job_2_str="""
-    ●	Pioneered the SDLC for a groundbreaking product recommendation tool, markedly boosting digital customer engagement and securing the prestigious J.D. Power Associates Award for three consecutive years.
-    ●	Championed the launch of Wells Fargo's first mobile app for home mortgage services and an award-winning product recommendation tool, developed in collaboration with UX/UI teams to set a digital standard across iOS, Android, and Blackberry platforms. This initiative, enhancing user engagement and support, was adopted by 16,000 mortgage loan originators and significantly improved our digital customer service capabilities.
-    ●	Spearheaded the 'Fee Engine' design, a business rules engine using automation to revamp fee calculations, enhancing accuracy and eliminating over-tolerance losses by $2M annually, driving operational improvements.
-    ●	Implemented process automation strategies that yielded $12M in annual cost savings, streamlining technology solutions in pricing and fee estimation.
-    ●	Directed the design of the HARP/HAMP triage tool, partnering with UX/UI teams to enhance user interface and customer experience, which reviewed 3,000 applications in its first week and improved mortgage affordability and diversity. This project showcased our commitment to using digital solutions to enhance customer service.
-    """
-    add_field_info('workExperience-3', "textarea[data-automation-id='description']", job_2_str)
-
-
-    time.sleep(10)
-    try:
-        add_work = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div[data-automation-id='workExperienceSection'] button[data-automation-id='Add Another']")))
-        add_work.click()
-    except:
-        print ("Cannot add another job")
-        import pdb; pdb.set_trace()
-        pass
-
-
-    add_field_info('workExperience-4', "input[data-automation-id='jobTitle']", "Sr. Business Analyst")
-    add_field_info('workExperience-4', "input[data-automation-id='company']", "Wells Fargo")
-    add_field_info('workExperience-4', "input[data-automation-id='location']", "Des Moines, IA")
-    add_field_info('workExperience-4', "div[data-automation-id='formField-startDate'] input[data-automation-id='dateSectionMonth-input']", "12/2004")
-    add_field_info('workExperience-4', "div[data-automation-id='formField-endDate'] input[data-automation-id='dateSectionMonth-input']", "05/2007")
-    job_2_str="""
-    ●	Developed a policy lookup tool for 12,000 mortgage loan originators, cutting lookup times and elevating match accuracy by 40%.
-    ●	Created a mortgage recommendation tool, raising mortgage acceptance by 20% and increasing customer satisfaction by offering borrowers better financial terms.
-    ●	Designed and deployed a mortgage reconfiguration algorithm, augmenting approval rates by 25% for previously at-risk mortgages by aligning with alternative investor guidelines.
-    """
-    add_field_info('workExperience-4', "textarea[data-automation-id='description']", job_2_str)
+    for i,job in enumerate(u.jobs):
+        num=i+1
+        if (num > 1):
+            css_click_button(q_str="div[data-automation-id='workExperienceSection'] button[data-automation-id='Add Another']")
+            time.sleep(2)
+        css_add_text_info(f'workExperience-{num}', "input[data-automation-id='jobTitle']", job['title'])
+        css_add_text_info(f'workExperience-{num}', "input[data-automation-id='company']",  job['company'])
+        css_add_text_info(f'workExperience-{num}', "input[data-automation-id='location']", job['location'])
+        if job['current']:
+            q_str=f"div[data-automation-id='workExperience-{num}'] input[data-automation-id='currentlyWorkHere']"
+            css_click_radio_box(q_str)
+        else:
+            css_add_text_info(f'workExperience-{num}', "div[data-automation-id='formField-endDate'] input[data-automation-id='dateSectionMonth-input']", job['end'])
+        css_add_text_info(f'workExperience-{num}', "div[data-automation-id='formField-startDate'] input[data-automation-id='dateSectionMonth-input']", job['from'])
+        css_add_text_info(f'workExperience-{num}', "textarea[data-automation-id='description']", job['description'])
+        print (f"******* Job {num} done *****")
 
 #comment this if this doesnt need to be driven
-drive_all_experience(wait)
+skip_edu = drive_all_experience(wait)
 
+def drive_all_education(wait):
+    print ("Drive education")
+    css_click_button(q_str="div[data-automation-id='educationSection'] button[aria-label='Add Education']")
 
-next_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-automation-id='bottom-navigation-next-button']")))
-if next_button:
-    next_button.click()
-else:
-    print ("Next button not present..")
-##################
-# My Application
-##################
+    for i,edu in enumerate(u.education):
+        num=i+1
+        if (num > 1):
+            css_click_button(q_str="div[data-automation-id='educationSection'] button[data-automation-id='Add Another']")
+            time.sleep(2)
+        css_add_text_info(f'education-{num}', "input[data-automation-id='school']", edu['school'])
+        css_dropdown_select(q_str=f"div[data-automation-id='education-{num}'] button[data-automation-id='degree']", response=edu['degree'])
+        css_dropdown_text_select(q_str=f"div[data-automation-id='education-{num}'] input[data-uxi-widget-type='selectinput']", text=edu['field'])
+        css_add_text_info(f'education-{num}', "input[data-automation-id='gpa']", edu['gpa'])
+        css_add_text_info(f'education-{num}', "div[data-automation-id='formField-startDate'] input[data-automation-id='dateSectionYear-input']", edu['from'])
+        css_add_text_info(f'education-{num}', "div[data-automation-id='formField-endDate'] input[data-automation-id='dateSectionYear-input']", edu['end'])
+        print (f"******* Education {num} done *****")
+
+#comment this if this doesnt need to be driven
+if not skip_edu:
+    drive_all_education(wait)
+
+#Resume section
+if not skip_edu:
+    import os
+    full_resume_path=os.path.abspath(u.resume["pm"])
+    try:
+        q = driver.find_element(By.CSS_SELECTOR, f"div[data-automation-id='resumeSection'] input[type='file']")
+        driver.execute_script("arguments[0].scrollIntoView(true);", q)
+    except:
+        print ("cannot find file upload")
+        import pdb; pdb.set_trace()
+    try:
+        q.send_keys(full_resume_path)
+    except:
+        print ("cannot upload")
+        import pdb; pdb.set_trace()
+
+time.sleep(4)
+
+workday_save_and_next(wait, frm="[My experience]", to="[Application Questions]")
+####################################################################
+#                     My Application
+####################################################################
+workday_wait_till_pageload(wait)
 print ("Next screen..moving to Application Questions....")
-next_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-automation-id='bottom-navigation-next-button']")))
+time.sleep(5)
 
-def answer_questions(q_str, response):
-    q = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, f"{q_str}")))
-    q.click()
-    driver.execute_script("arguments[0].scrollIntoView(true);", q) 
-    wait.until(EC.element_to_be_clickable((By.XPATH, f"//div[text()='{response}']"))).click()
+skip_ques=False
+try:
+    found = driver.find_element(By.XPATH, "//*[contains(@aria-label, 'Are you a current or former Wells Fargo employee? Yes')]")
+    print("Skipping questions")
+    skip_ques=True
+except Exception as e:
+    print("Skipping questions NOT ",e)
+    skip_ques=False
 
-q1_str="button[aria-label='Are you a current or former Wells Fargo employee? select one required']"
-answer_questions(q_str=q1_str, response="Yes, former employee")
+if not skip_ques:
+    q1_str="button[aria-label='Are you a current or former Wells Fargo employee? select one required']"
+    css_dropdown_select(q_str=q1_str, response="Yes, former employee")
 
-driver.find_element(By.CSS_SELECTOR, "textarea[data-automation-id='fbfd9c6b32531015123e4853743e0001']").send_keys('2711')
+    time.sleep(5)
+    css_add_text_info(f'primaryQuestionnairePage', "textarea[data-automation-id='fbfd9c6b32531015123e4853743e0001']", u.social_last_four)
 
+    q2_str="button[aria-label='Are you 18 years of age or older? select one required']"
+    css_dropdown_select(q_str=q2_str, response="Yes")
 
-q2_str="button[aria-label='Are you 18 years of age or older? select one required']"
-answer_questions(q_str=q2_str, response="Yes")
-
-q3_str="button[aria-label='Will you now or in the future require sponsorship for employment visa to work in the country you are applying to work in? For the US, this includes sponsorship of H-1B, TN, or E-3 visas. Persons currently on F-1 visas completing curricular or optional practical training should answer yes. select one required'"
-answer_questions(q_str=q3_str, response="No")
-
-
-q4_str="button[aria-label='Have you ever been involuntarily discharged or asked to resign from a position? Your response should not include discharges due to layoff, displacement, or reorganization. select one required'"
-answer_questions(q_str=q4_str, response="No")
-
-q5_str="button[aria-label='Have you ever been disciplined by an administrative agency or the subject of an administrative order relating to conduct or practices involving any aspect of the financial services, insurance, securities, or real estate industries or any other licensed industry profession? An Administrative agency is a government body authorized to implement legislative directives by developing more precise and technical rules. select one required'"
-answer_questions(q_str=q5_str, response="No")
-
-q6_str="button[aria-label='Do you have any non-compete/non-solicitation or other agreements that prevents or restricts you from performing the job for which you are applying for? select one required'"
-answer_questions(q_str=q6_str, response="No")
-
-q7_str="button[aria-label='Do you have any fiduciary appointments (such as an executor, personal representative, administrator, guardian, trustee, or any similar fiduciary designation) that involve a current Wells Fargo customer, or someone you know that intends to become a Wells Fargo customer (for example, a current client)? select one required'"
-answer_questions(q_str=q7_str, response="No")
-
-q8_str="button[aria-label='Are you currently a member of, or do you currently serve in any capacity on, a Board of Directors, Advisory Board, Committee, Trustee Board, or have any other similar position with any for-profit or non-profit organization? select one required'"
-answer_questions(q_str=q8_str, response="No")
+    q3_str="button[aria-label='Will you now or in the future require sponsorship for employment visa to work in the country you are applying to work in? For the US, this includes sponsorship of H-1B, TN, or E-3 visas. Persons currently on F-1 visas completing curricular or optional practical training should answer yes. select one required'"
+    css_dropdown_select(q_str=q3_str, response="No")
 
 
-q9_str="button[aria-label='Do you currently have, or plan to have, any employment or other work that you intend to continue if you accept a job at Wells Fargo? Including, but not limited to, an independent contractor, consultant, real estate agent, home inspector, appraiser, tax preparer, seasonal or part-time employee. select one required'"
-answer_questions(q_str=q9_str, response="No")
+    q4_str="button[aria-label='Have you ever been involuntarily discharged or asked to resign from a position? Your response should not include discharges due to layoff, displacement, or reorganization. select one required'"
+    css_dropdown_select(q_str=q4_str, response="No")
 
-q10_str="button[aria-label='Do you currently have 25% or more (10% or more if seeking a Wells Fargo Executive Officer role) ownership interest in, or plan to have such an ownership interest in any for-profit business entity or activity? Including an inactive business, business entities formed for the purpose of business holdings, investments, or future business activities; sole proprietorships; or non-registered business entities or activities. select one required'"
-answer_questions(q_str=q10_str, response="No")
+    q5_str="button[aria-label='Have you ever been disciplined by an administrative agency or the subject of an administrative order relating to conduct or practices involving any aspect of the financial services, insurance, securities, or real estate industries or any other licensed industry profession? An Administrative agency is a government body authorized to implement legislative directives by developing more precise and technical rules. select one required'"
+    css_dropdown_select(q_str=q5_str, response="No")
 
-q11_str="button[aria-label='Do you currently serve, service, or plan to serve in any position of control with a for-profit business entity or activity? select one required'"
-answer_questions(q_str=q11_str, response="No")
+    q6_str="button[aria-label='Do you have any non-compete/non-solicitation or other agreements that prevents or restricts you from performing the job for which you are applying for? select one required'"
+    css_dropdown_select(q_str=q6_str, response="No")
 
-q12_str="button[aria-label='Are you currently serving as, or planning to serve as, an elected or appointed official or as a member, director, officer, or employee of a government entity or governmental or public agency, authority, advisory board, city council, school board, political party committee, or other similar board or entity? select one required'"
-answer_questions(q_str=q12_str, response="No")
+    q7_str="button[aria-label='Do you have any fiduciary appointments (such as an executor, personal representative, administrator, guardian, trustee, or any similar fiduciary designation) that involve a current Wells Fargo customer, or someone you know that intends to become a Wells Fargo customer (for example, a current client)? select one required'"
+    css_dropdown_select(q_str=q7_str, response="No")
 
-q13_str="button[aria-label='Do you have a family relationship (biological, adopted, marriage, domestic partnership, civil union, or some other arrangement), or are you a close personal contact (a regular and ongoing close connection that may be personal, romantic, or financial) of any employees, contingent resources, or board members of Wells Fargo or its subsidiaries? select one required'"
-answer_questions(q_str=q13_str, response="Yes")
-time.sleep(2)
-driver.find_element(By.CSS_SELECTOR, "textarea[data-automation-id='fbfd9c6b32531015123e4abc2b620006']").send_keys('Swati Karnik. Wife. Dallas, Texas')
-
-q14_str="button[aria-label='Do you currently work, or have you worked for KPMG (Klynveld Peat Marwick Goerdeler - the bank’s auditor) during the past five years? select one required'"
-answer_questions(q_str=q14_str, response="No")
-
-q15_str="button[aria-label='Are you a current or former military spouse or domestic partner? select one required'"
-answer_questions(q_str=q15_str, response="No")
-
-q16_str="button[aria-label='Are you a Senior Government Official or have you served as one in the past two years? select one required'"
-answer_questions(q_str=q16_str, response="No")
-
-q17_str="button[aria-label='Did a Senior Government Official refer you for this position? select one required'"
-answer_questions(q_str=q17_str, response="No")
-
-q18_str="button[aria-label='Do you have a family relationship (biological, adopted, marriage, domestic partnership, civil union, or some other arrangement) with, or are you a close personal contact (a regular and ongoing close connection that may be personal, romantic, or financial) of a Senior Government Official? select one required'"
-answer_questions(q_str=q18_str, response="No")
-
-q19_str="button[aria-label='Did a Senior Executive of a customer, potential customer or third-party vendor of Wells Fargo refer you for this position? select one required'"
-answer_questions(q_str=q19_str, response="No")
-
-q20_str="button[aria-label='Do you have a family relationship (biological, adopted, marriage, domestic partnership, civil union, or some other arrangement) with, or are you a close personal contact (a regular and ongoing close connection that may be personal, romantic, or financial) of a Senior Executive of a customer, potential customer or third-party vendor of Wells Fargo? select one required'"
-answer_questions(q_str=q20_str, response="No")
-
-q21_str="button[aria-label='Are you currently serving in, or planning to serve in, any paid or unpaid (volunteer) position on a political campaign? select one required'"
-answer_questions(q_str=q21_str, response="No")
-
-time.sleep(2)
-next_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-automation-id='bottom-navigation-next-button']")))
-if next_button:
-    next_button.click()
-else:
-    print ("Next button not present..")
-
-##################
-# My Application
-##################
-next_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-automation-id='bottom-navigation-next-button']")))
-#next_button.click()
+    q8_str="button[aria-label='Are you currently a member of, or do you currently serve in any capacity on, a Board of Directors, Advisory Board, Committee, Trustee Board, or have any other similar position with any for-profit or non-profit organization? select one required'"
+    css_dropdown_select(q_str=q8_str, response="No")
 
 
-q21_str="button[aria-label='Please select the Race/Ethnicity which most describes how you identify yourself. select one']"
-answer_questions(q_str=q21_str, response="Asian (United States of America)")
+    q9_str="button[aria-label='Do you currently have, or plan to have, any employment or other work that you intend to continue if you accept a job at Wells Fargo? Including, but not limited to, an independent contractor, consultant, real estate agent, home inspector, appraiser, tax preparer, seasonal or part-time employee. select one required'"
+    css_dropdown_select(q_str=q9_str, response="No")
 
-q22_str="button[aria-label='Please select your gender. select one']"
-answer_questions(q_str=q22_str, response="Male")
+    q10_str="button[aria-label='Do you currently have 25% or more (10% or more if seeking a Wells Fargo Executive Officer role) ownership interest in, or plan to have such an ownership interest in any for-profit business entity or activity? Including an inactive business, business entities formed for the purpose of business holdings, investments, or future business activities; sole proprietorships; or non-registered business entities or activities. select one required'"
+    css_dropdown_select(q_str=q10_str, response="No")
 
-q23_str="button[aria-label='Please select the veteran status which most accurately describes your status. select one']"
-answer_questions(q_str=q23_str, response="I am not a Veteran")
-#dropdown_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[aria-haspopup='listbox']")))
-#dropdown_button.click()
-# Wait for the listbox to appear and locate the "Yes" option
-#yes_option = wait.until(EC.element_to_be_clickable((By.XPATH, "//li[contains(text(), 'Yes')]")))
-# Click the "Yes" option to select it
-#yes_option.click()
-#print ("Finished...")
-#next_button.click()
+    q11_str="button[aria-label='Do you currently serve, service, or plan to serve in any position of control with a for-profit business entity or activity? select one required'"
+    css_dropdown_select(q_str=q11_str, response="No")
+
+    q12_str="button[aria-label='Are you currently serving as, or planning to serve as, an elected or appointed official or as a member, director, officer, or employee of a government entity or governmental or public agency, authority, advisory board, city council, school board, political party committee, or other similar board or entity? select one required'"
+    css_dropdown_select(q_str=q12_str, response="No")
+
+    q13_str="button[aria-label='Do you have a family relationship (biological, adopted, marriage, domestic partnership, civil union, or some other arrangement), or are you a close personal contact (a regular and ongoing close connection that may be personal, romantic, or financial) of any employees, contingent resources, or board members of Wells Fargo or its subsidiaries? select one required'"
+    css_dropdown_select(q_str=q13_str, response="Yes")
+    time.sleep(2)
+    driver.find_element(By.CSS_SELECTOR, "textarea[data-automation-id='fbfd9c6b32531015123e4abc2b620006']").send_keys('Swati Karnik. Wife. Dallas, Texas')
+
+    q14_str="button[aria-label='Do you currently work, or have you worked for KPMG (Klynveld Peat Marwick Goerdeler - the bank’s auditor) during the past five years? select one required'"
+    css_dropdown_select(q_str=q14_str, response="No")
+
+    q15_str="button[aria-label='Are you a current or former military spouse or domestic partner? select one required'"
+    css_dropdown_select(q_str=q15_str, response="No")
+
+    q16_str="button[aria-label='Are you a Senior Government Official or have you served as one in the past two years? select one required'"
+    css_dropdown_select(q_str=q16_str, response="No")
+
+    q17_str="button[aria-label='Did a Senior Government Official refer you for this position? select one required'"
+    css_dropdown_select(q_str=q17_str, response="No")
+
+    q18_str="button[aria-label='Do you have a family relationship (biological, adopted, marriage, domestic partnership, civil union, or some other arrangement) with, or are you a close personal contact (a regular and ongoing close connection that may be personal, romantic, or financial) of a Senior Government Official? select one required'"
+    css_dropdown_select(q_str=q18_str, response="No")
+
+    q19_str="button[aria-label='Did a Senior Executive of a customer, potential customer or third-party vendor of Wells Fargo refer you for this position? select one required'"
+    css_dropdown_select(q_str=q19_str, response="No")
+
+    q20_str="button[aria-label='Do you have a family relationship (biological, adopted, marriage, domestic partnership, civil union, or some other arrangement) with, or are you a close personal contact (a regular and ongoing close connection that may be personal, romantic, or financial) of a Senior Executive of a customer, potential customer or third-party vendor of Wells Fargo? select one required'"
+    css_dropdown_select(q_str=q20_str, response="No")
+
+    q21_str="button[aria-label='Are you currently serving in, or planning to serve in, any paid or unpaid (volunteer) position on a political campaign? select one required'"
+    css_dropdown_select(q_str=q21_str, response="No")
 
 
-#wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
-#next_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "[data-automation-id='bottom-navigation-next-button']")))
-#print ("Next screen..moving to Application Questions")
-#https://wd1.myworkdaysite.com/en-US/recruiting/wf/WellsFargoJobs/job/BEE-CAVE%2C-TX/Senior-Premier-Banker---BEE-CAVE---GALLERIA---Bee-Cave--TX_R-364228/apply/useMyLastApplication
+workday_save_and_next(wait, frm="[Application Questions]", to="[Voluntary Disclosures]")
+####################################################################
+#   Voluntary Disclosures
+####################################################################
+workday_wait_till_pageload(wait)
 
-next_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-automation-id='bottom-navigation-next-button']")))
-if next_button:
-    next_button.click()
-else:
-    print ("Next button not present..")
 
-import pdb; pdb.set_trace()
-time.sleep(120) # Let the user actually see something!
-print("click waiting..over + 120s")
+skip_identify=False
+try:
+    time.sleep(2)
+    found = driver.find_element(By.XPATH, "//*[contains(@aria-label, 'Please select the Race/Ethnicity which most describes how you identify yourself. Asian')]")
+    skip_identify=True
+    print("Skipping identify")
+except:
+    skip_identify=False
+
+if not skip_identify:
+    q21_str="button[aria-label='Please select the Race/Ethnicity which most describes how you identify yourself. select one']"
+    css_dropdown_select(q_str=q21_str, response="Asian (United States of America)")
+
+    q22_str="button[aria-label='Please select your gender. select one']"
+    css_dropdown_select(q_str=q22_str, response="Male")
+
+    q23_str="button[aria-label='Please select the veteran status which most accurately describes your status. select one']"
+    css_dropdown_select(q_str=q23_str, response="I am not a Veteran")
+
+# Have to re-do this everytime..so not skipped
+q_str=f"input[data-automation-id='agreementCheckbox']"
+css_click_radio_box(q_str)
+
+workday_save_and_next(wait, frm="[Voluntary Disclosures]", to="[Self Identify]")
+####################################################################
+#                     Self Identify
+####################################################################
+workday_wait_till_pageload(wait)
+
+css_add_text_info(f'self-identification-content', "input[data-automation-id='name']", u.name)
+css_add_text_info(f'self-identification-content', "input[data-automation-id='dateSectionYear-input']", u.today)
+
+q_str=f"input[id='64cbff5f364f10000aeec521b4ec0000']"
+css_click_radio_box(q_str)
+
+workday_save_and_next(wait, frm="[Self Identify]", to="[Review & Submit]")
+####################################################################
+#                     Review and Submit
+####################################################################
+input ("Make sure all information is correct and hit the submit button on webpage. Then press enter here.")
+
+#workday_save_and_next(wait, frm="[Review & Submit]", to="[Submit]")
+#####################################################################
+print ("Best of luck!")
 driver.quit()
 service.stop()
