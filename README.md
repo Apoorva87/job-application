@@ -22,6 +22,8 @@ unzip chromedriver-mac-arm64.zip
 5. [skip for now] Deactivate venv
 deactivate
 
+6. Download Ollama for running LLM 
+
 
 Git Shenanigans:
 - Have github.com (free) account

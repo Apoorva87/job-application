@@ -3,7 +3,7 @@ import requests
 import json
 import copy
 import datetime as d
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
 
 class JobDetail(object):
 
@@ -19,6 +19,10 @@ class JobDetail(object):
         self.job_detail['category'] = ''
         self.job_detail['applied'] = False
         self.job_detail['other'] = ''
+
+    def __str__(self):
+        return f"Title: {self.job_detail['title']}\
+                Location: {self.job_detail['locations']}"
 
     def get_dict(self):
         return self.job_detail
@@ -52,7 +56,7 @@ class Jobs(object):
         if do:
             name = name[:-5] + '_'+str(d.date.today()) + '.json'
             filtered_data = [{k: v for k, v in job.get_dict().items() if k not in exclude_list} for job in self.job_list ]
-            with open(name, "w") as f: 
+            with open('scrapped_jobs_history'+name, "w") as f: 
                 #print (json.dumps(filtered_data, indent=2), file=f)
                 json.dump(filtered_data, f, default=str, indent=2)
                 #json.dumps(filtered_data, f, indent=2, default=str)
@@ -79,7 +83,7 @@ class WebPageParser(object):
         resp = requests.get(self.link, timeout=self.timeout)
         if self.debug:
             f = open(f"{self.name}_resp.txt",'+w')
-            print (self.soup, file=f)
+            print (resp.text, file=f)
             f.close()
         if resp.status_code != 200:
             print ("Could not fetch page:")
@@ -106,6 +110,7 @@ class WebPageParser(object):
         print (f"DEBUG - Parsing page...")
         self.parse_page()
         print (f"DEBUG - Parsing page...")
+        #import pdb; pdb.set_trace()
         if self.good_resp:
             jobs_list = self.get_jobs()
             self.jobs_list.add_job_list(jobs_list.get_job_list())
