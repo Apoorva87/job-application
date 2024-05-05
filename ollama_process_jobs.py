@@ -80,7 +80,7 @@ with open(file_path, "r") as file:
         full_answer=''
         jid=j['id']
         if jid in lookup_dict.keys():
-            if j['match']:
+            if lookup_dict[jid]['match']:
                 print (f"Skipping --- {j['id']} -- {j['title']}")
                 continue
 
@@ -91,7 +91,8 @@ with open(file_path, "r") as file:
                 {'role': 'system', 'content': f"Compare job description to resume and find if it is a good match and if I should apply to this job"},
                 {'role': 'user', 'content': f"Here is my resume {resume_text}"},
                 {'role': 'user', 'content': f"Here are the details for job {j}"},
-                {'role': 'user', 'content': f"Score if the above job description is a good fit for my resume based on my previous and current experience, my skills, my education and location. Provide 2 bullets of what would be good skills for the job that is not on my resume. At the end provide a one line match score out of 100 strictly in a format 'match_score_is <score>'"},
+                #{'role': 'user', 'content': f"Score if the above job description is a good fit for my resume based on my previous and current experience, my skills, my education and location. Provide 2 bullets of what would be good skills for the job that is not on my resume. At the end provide a one line match score out of 100 strictly in a format 'match_score_is <score>'"},
+                {'role': 'user', 'content': f"Assess whether the job description provided aligns with my resume based on my previous and current professional experiences, skills, educational background, and location. Ensure that I meet the minimum requirements of the position. Provide two relevant skills that would be beneficial for the job but are currently absent from my resume. Conclude with a precise match score out of 100, formatted as 'match_score_is <score>'. The emphasis should be on high relevance and suitability of the job to my profile, prioritizing quality of match over quantity."},
                 ],
             stream=True,
         )
