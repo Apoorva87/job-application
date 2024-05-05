@@ -58,7 +58,7 @@ resume_text=open(resume_file, 'r').read()
 jobs_at=m.group(1)
 date=m.group(2)
 
-jobs_applied_file=f"./processed/{jobs_at}_applied.json"
+jobs_applied_file=f"./processed_jobs/{jobs_at}_applied.json"
 applied_dict=[dict()]
 if os.path.isfile(jobs_applied_file):
     print (f"Reading {jobs_applied_file}")

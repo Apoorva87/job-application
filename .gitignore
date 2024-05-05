@@ -1,2 +1,6 @@
 bin
 lib
+pyvenv.cfg
+.cs/
+__pycache__/
+chromedriver-mac-arm64/

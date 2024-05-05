@@ -56,7 +56,7 @@ class Jobs(object):
         if do:
             name = name[:-5] + '_'+str(d.date.today()) + '.json'
             filtered_data = [{k: v for k, v in job.get_dict().items() if k not in exclude_list} for job in self.job_list ]
-            with open('scrapped_jobs_history'+name, "w") as f: 
+            with open('scrapped_jobs/'+name, "w") as f: 
                 #print (json.dumps(filtered_data, indent=2), file=f)
                 json.dump(filtered_data, f, default=str, indent=2)
                 #json.dumps(filtered_data, f, indent=2, default=str)
