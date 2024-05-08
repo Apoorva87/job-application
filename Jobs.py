@@ -4,6 +4,7 @@ import json
 import copy
 import datetime as d
 from bs4 import BeautifulSoup, Comment
+import os
 
 class JobDetail(object):
 
@@ -55,17 +56,41 @@ class Jobs(object):
     def save(self, name='default_joblist.json', exclude_list=[], do=False):
         if do:
             name = name[:-5] + '_'+str(d.date.today()) + '.json'
+            full_path='scrapped_jobs/'+name
+
             filtered_data = [{k: v for k, v in job.get_dict().items() if k not in exclude_list} for job in self.job_list ]
+
+            print(f"Writting {len(filtered_data)}")
+
+            scrapped_dict=[dict()]
+            if os.path.isfile(full_path):
+                print (f"Reading {full_path}")
+                with open(full_path, "r") as file:
+                    scrapped_dict=json.load(file)
+            scrapped_jobs_list=[]
+            for sj in scrapped_dict:
+                try:
+                    scrapped_jobs_list.append(sj['id'])
+                except Exception as e:
+                    print (f"{e} --- {sj}")
+            #import pdb; pdb.set_trace()
+            filtered_data_2 = [ j for j in filtered_data if j['id'] not in scrapped_jobs_list]
+            for j in scrapped_dict:
+                filtered_data_2.append(j)
+            
+            print(f"Final writting {len(filtered_data_2)}")
+
             with open('scrapped_jobs/'+name, "w") as f: 
                 #print (json.dumps(filtered_data, indent=2), file=f)
-                json.dump(filtered_data, f, default=str, indent=2)
+                json.dump(filtered_data_2, f, default=str, indent=2)
                 #json.dumps(filtered_data, f, indent=2, default=str)
 
 
 
 class WebPageParser(object):
-    def __init__(self, name='default', link=None, timeout=60, debug=False, job_list=None):
+    def __init__(self, name='default', link=None, timeout=120, debug=False, job_list=None, params=None):
         self.link = link
+        self.params = params
         self.timeout = timeout
         self.response = None
         self.soup = None
@@ -80,7 +105,7 @@ class WebPageParser(object):
             self.jobs_list.add_job_list(job_list)
 
     def get_page(self):
-        resp = requests.get(self.link, timeout=self.timeout)
+        resp = requests.get(self.link, params=self.params, timeout=self.timeout)
         if self.debug:
             f = open(f"{self.name}_resp.txt",'+w')
             print (resp.text, file=f)
@@ -90,6 +115,7 @@ class WebPageParser(object):
             print (f"{self.link}")
             print (f"Error code {resp.status_code}")
         else:
+            print (f"URL: {resp.request.url}")
             self.response = resp
             self.good_resp = True
 

@@ -3,6 +3,7 @@ import requests
 import json
 import datetime as d
 from bs4 import BeautifulSoup
+import html2text
 
 from Jobs import *
 
@@ -25,7 +26,11 @@ class USBankScrapper(WebPageParser):
                 data = [json.loads(x.string) for x in self.soup.find_all("script", type="application/ld+json")]
                 apply_link = self.soup.find("a", {"id":'js-apply-external'}, href=True)['href']
                 jd = JobDetail()
-                jd.add_detail('description', data[0]['description']) #needed
+                try:
+                    vh = html2text.html2text(data[0]['description'])
+                    jd.add_detail('description', vh) #needed
+                except Exception as e:
+                    jd.add_detail('description', data[0]['description']) #needed
                 jd.add_detail('id', data[0]['identifier']) #needed
                 jd.add_detail('posted', d.date.fromisoformat(data[0]['datePosted'][0:10])) #needed
                 jd.add_detail('applylink', apply_link)
@@ -58,6 +63,14 @@ class USBankScrapper(WebPageParser):
             job_id = job['reqId']
             job_post = job['postedDate']
             job_desc = job['descriptionTeaser']
+
+            if 'teller' in job_title.lower() or \
+            'assistant' in job_title.lower() or \
+            'legal' in job_title.lower() or \
+            'banker' in job_title.lower() or \
+            'spanish' in job_title.lower() or \
+            'branch' in job_title.lower(): #skip all teller jobs
+                continue
 
             jd = JobDetail()
             jd.add_detail('title', job_title)

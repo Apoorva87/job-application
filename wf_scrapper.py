@@ -3,13 +3,14 @@ import requests
 import json
 import datetime as d
 from bs4 import BeautifulSoup
+import html2text
 
 from Jobs import *
 
 
 class WFScrapper(WebPageParser):
-    def __init__(self, name='', link=None, job_list=None):
-        super().__init__(name=self.__class__.__name__+name, link=link, job_list=job_list)
+    def __init__(self, name='', link=None, job_list=None, params=None):
+        super().__init__(name=self.__class__.__name__+name, link=link, job_list=job_list, params=params)
 
     #Process pages which only specify 1 jobs details
     def process_single_job(self, link=None) -> JobDetail:
@@ -25,7 +26,18 @@ class WFScrapper(WebPageParser):
                 data = [json.loads(x.string) for x in self.soup.find_all("script", type="application/ld+json")]
                 apply_link = self.soup.find("a", {"id":'js-apply-external'}, href=True)['href']
                 jd = JobDetail()
-                jd.add_detail('description', data[0]['description']) #needed
+                pos=data[0]['description'].find('We Value Diversity')
+                try:
+                    vh = html2text.html2text(data[0]['description'])
+                    if pos > 1:
+                        jd.add_detail('description', vh[:pos]) #needed
+                    else:
+                        jd.add_detail('description', vh) #needed
+                except Exception as e:
+                    if pos > 1:
+                        jd.add_detail('description', data[0]['description'][:pos]) #needed
+                    else:
+                        jd.add_detail('description', vh) #needed
                 jd.add_detail('id', data[0]['identifier']) #needed
                 jd.add_detail('posted', d.date.fromisoformat(data[0]['datePosted'][0:10])) #needed
                 jd.add_detail('applylink', apply_link)
@@ -51,6 +63,17 @@ class WFScrapper(WebPageParser):
             job_location    =  job.findAll('li', class_="list-inline-item")[0].text.replace('\n',' - ')
             job_category =  job.findAll('li', class_="list-inline-item")[1].text.replace('\n',' - ')
 
+            if 'teller' in job_title.lower() or \
+            'assistant' in job_title.lower() or \
+            'legal' in job_title.lower() or \
+            'banker' in job_title.lower() or \
+            'spanish' in job_title.lower() or \
+            'consultant' in job_title.lower() or \
+            'hyderabad' in job_location.lower() or \
+            'bengaluru' in job_location.lower() or \
+            'branch' in job_title.lower(): #skip all teller jobs
+                continue
+
             jd = JobDetail()
             jd.add_detail('title', job_title)
             jd.add_detail('link', full_link)
@@ -70,8 +93,33 @@ class WFScrapper(WebPageParser):
         return jobs_list
 
 j_list=None
-for n in range(1,4):
-    jobs_url = f"https://www.wellsfargojobs.com/en/jobs/?page={n}&country=United+States+of+America&region=Texas&team=Administrative+%26+Corporate+Services&team=Governance+%26+Controls&team=Operations&team=Product+Management&team=Research&team=Strategy+%26+Execution&team=Technology+%26+Data&type=Full+time&wtype=Regular&pagesize=50#results"  # Example, may not be correct
-    scp = WFScrapper(link=jobs_url, job_list=j_list)
-    scp.process(save=True)
-    j_list = scp.jobs_list.get_job_list()
+num_jobs=0
+try_again=16
+for x in range(1, try_again):
+    import time
+    time.sleep(2)
+    for n in range(0,8):
+        #jobs_url = f"https://www.wellsfargojobs.com/en/jobs/?page={n}&country=United+States+of+America&team=Administrative+%26+Corporate+Services&team=Governance+%26+Controls&team=Operations&team=Product+Management&team=Research&team=Strategy+%26+Execution&team=Technology+%26+Data&type=Full+time&wtype=Regular&pagesize=50#results"  # Example, may not be correct
+        jobs_url = f"https://www.wellsfargojobs.com/en/jobs/"
+        scp = WFScrapper(link=jobs_url, job_list=j_list,
+                         params={'page':f'{n}',
+                                 'country':f'United States of America',
+                                 'team': ['Administrative & Corporate Services',
+                                          'Governance & Controls',
+                                          'Strategy & Execution',
+                                          'Technology & Data',
+                                          'Research',
+                                          'Product Management',
+                                          'Operations'],
+                                 'type':'Full time',
+                                 'wtype':'Regular',
+                                 'pagesize':'50'
+                                 })
+        # requests.get(url='https://www.wellsfargojobs.com/en/jobs/', params={'page':'1', 'country':'United States of America', 'team':['Administrative & Corporate Services','Governance & Controls']})
+        scp.process(save=True)
+        j_list = scp.jobs_list.get_job_list()
+        if num_jobs != len(j_list):
+            num_jobs = len(j_list)
+        else:
+            print (f"Exiting..{n}")
+            break

@@ -3,6 +3,8 @@ import requests
 import json
 import datetime as d
 from bs4 import BeautifulSoup
+import html2text
+import re
 
 from Jobs import *
 
@@ -21,7 +23,21 @@ class USAAScrapper(WebPageParser):
 
             def get_jobs(self) -> Jobs:
                 jobs_list = Jobs()
-                data = json.loads(self.soup.find_all("script", type="application/ld+json")[0].text)
+                try:
+                    data = json.loads(self.soup.find_all("script", type="application/ld+json")[0].text)
+                except Exception as e:
+                    #print(self.soup)
+                    print(f"{e}")
+                    try:
+                        json_string = self.soup.find_all("script", type="application/ld+json")[0].text
+                        cleaned_json_string = re.sub(r'[\x00-\x1F\x7F]', '', json_string)
+                        cleaned_json_string = json_string.replace('\n', '\\n').replace('\t', '\\t')
+                        data = json.loads(cleaned_json_string)
+                    except Exception as e:
+                        #print(self.soup)
+                        print(f"{e}")
+                        import pdb; pdb.set_trace()
+                        exit (0)
 
                 job_id = self.soup.find("div", class_="job-id job-info").dd.text
                 try:
@@ -33,7 +49,12 @@ class USAAScrapper(WebPageParser):
 
                 jd = JobDetail()
                 jd.add_detail('posted', d.datetime.strptime(data['datePosted'],'%Y-%m-%d')) #needed
-                jd.add_detail('description', data['description'])
+                #jd.add_detail('description', data['description'])
+                try:
+                    vh = html2text.html2text(data['description'])
+                    jd.add_detail('description', vh) #needed
+                except Exception as e:
+                    jd.add_detail('description', data['description']) #needed
                 jd.add_detail('id', job_id)
                 jd.add_detail('applylink', apply_link)
                 jd.add_detail('other', {'directApply':data['directApply']})
@@ -65,6 +86,18 @@ class USAAScrapper(WebPageParser):
             full_link       = f"https://www.usaajobs.com/"+job['href']
             job_location    =  job.span.text.replace('|','').split('\xa0')
             job_id          = job['data-job-id']
+
+            if 'teller' in job_title.lower() or \
+            'assistant' in job_title.lower() or \
+            'legal' in job_title.lower() or \
+            'banker' in job_title.lower() or \
+            'appraiser' in job_title.lower() or \
+            'attorney' in job_title.lower() or \
+            'spanish' in job_title.lower() or \
+            'specialist' in job_title.lower() or \
+            'consultant' in job_title.lower() or \
+            'branch' in job_title.lower(): #skip all teller jobs
+                continue
 
             jd = JobDetail()
             jd.add_detail('title', job_title)
