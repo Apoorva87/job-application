@@ -186,6 +186,9 @@ def ask_a_gpt(q_str):
     if cb:
         print (cb[-1].text)
    
+    print ("-------------------- NEXT ------------------------------")
+
+#####################################################
 
 q_str="Tell me joke today?"
 
@@ -213,6 +216,38 @@ Wells Fargo is seeking a Lending Operations Manager within Commercial Real Estat
 	•	Construction loan experience"""
 
 ask_a_gpt(q_str)
+
+#####################################################
+
+q_str="""
+About this role:
+Wells Fargo is seeking a Lending Operations Manager within Commercial Real Estate Operations in Wholesale Lending.
+ In this role, you will:
+	•	Manage the activities of a Loan Production, Loan Servicing, and Commercial or Real Estate Construction Loan team responsible for loan processing, documentation, pre-closing or closing tasks, loan monitoring, loan servicing, or underwriting activities
+	•	Engage stakeholders and internal partners associated with the Lending Operations functional area
+	•	Identify and recommend opportunities for process improvement and risk control development within Lending Operations functional area
+	•	Participate in the formulation and implementation of new and revised systems, policies, and guidelines
+	•	Oversee implementation of practices to ensure compliance with Wells Fargo legal, investor, regulatory, or business policies
+	•	Make credit decisions and resolve issues regarding performance of a business unit or functional area to ensure business objectives are met
+	•	Interpret and develop policies and procedures for functional areas with low to moderate complexity, and with accountability for special portfolio segments requiring focused management
+	•	Collaborate and consult with Lending Operations peers, colleagues, and multiple level managers accountable for providing quality customer service to internal or external customers
+	•	Manage allocation of people and financial resources for Lending Operations
+	•	Mentor and guide talent development of direct reports and assist in hiring talent
+ Required Qualifications:
+	•	4+ years of Transactions and Processing experience, or equivalent demonstrated through one or a combination of the following: work experience, training, military experience, education
+	•	2+ years of Leadership experience
+ Desired Qualifications:
+	•	Strong attention to detail
+	•	Experience interpreting complex Commercial Real Estate (CRE) documentation
+	•	Ability to leverage available resources to accomplish group goals
+	•	Flexibility in a changing environment and the ability to lead a team through the same
+	•	Construction loan experience
+"""
+
+ask_a_gpt(q_str)
+
+#####################################################
+
 
 
 exit(0)
